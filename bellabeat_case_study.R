@@ -1,70 +1,41 @@
-#load librarys
+#load libraries
 library(tidyverse)
 library(lubridate)
 
-#create data frames
+#Dataframes / Tibbles
+#create hourly_steps dataframe
+hourly_steps <- read.csv('Fitabase_Data_4.12.16-5.12.16/hourlySteps_merged.csv')
+daily_activity <- read.csv('Fitabase_Data_4.12.16-5.12.16/dailyActivity_merged.csv')
 
-#daily_activity_4-12-16 thru 5-12-16
-daily_activity_april <- read.csv('Fitabase_data_4.12.16-5.12.16/dailyActivity_merged.csv')
-#sleep data 4-12-16 thru 5-12-16
-sleep_day_april <- read.csv('Fitabase_data_4.12.16-5.12.16/sleepDay_merged.csv')
+#hourly_steps
+#convert ActivityHour to datetime
+hourly_steps$ActivityHour <- mdy_hms(hourly_steps$ActivityHour, tz = "UTC")
 
-#taking a look at daily_activity_april
-head(daily_activity_april)
+#add column for active hour no date
+hourly_steps$active_hour <- as.integer(format(hourly_steps$ActivityHour, "%H"))
 
-#get the column names of daily_activity_april
-colnames(daily_activity_april)
+#inspecting DF
+summary(hourly_steps)
+str(hourly_steps)
 
-#get the column names of sleep_day_april
-colnames(sleep_day_april)
+#daily_activity
 
-#how many unique participants are in each?
-n_distinct(daily_activity_april$Id)
-n_distinct(sleep_day_april$Id)
 
-#how many observations are in each?
-nrow(daily_activity_april)
-nrow(sleep_day_april)
+#Analysis
+#find out the total and average steps per hour
+steps_per_hour_avg_total <- hourly_steps %>% 
+  group_by(active_hour) %>% 
+  summarise(total_steps = sum(StepTotal),
+            avg_steps = mean(StepTotal))
 
-#Quick summary stats
-
-daily_activity_april %>%
-  select(TotalSteps,
-         TotalDistance,
-         SedentaryMinutes) %>% 
-  summary()
-
-sleep_day_april %>% 
-  select(TotalSleepRecords,
-         TotalMinutesAsleep,
-         TotalTimeInBed) %>%
-  summary()
-
-#Whats the relationship between steps taken
-# in a day and sedentary minutes?
-ggplot(daily_activity_april,
-       aes(x = TotalSteps, y = SedentaryMinutes)) +
-  geom_point()
-
-#The more SedentaryMinutes the less steps
-# a person takes and vice-versa (on average)
-
-#Whats the relationship between minutes asleep
-# and time in bed?
-ggplot(sleep_day_april, 
-       aes(x = TotalMinutesAsleep, y = TotalTimeInBed)) +
-  geom_point()
-
-#Mostly linear where time in bed is equal to total
-# time asleep but there are a few outliers.
-# Would imagine its people just in bed but not asleep.
-
-#Combine the sleep data and the daily activity data frames
-combined_data <- merge(x = sleep_day_april, y = daily_activity_april, by = "Id", all = TRUE)
-
-n_distinct(combined_data$Id)
-nrow(combined_data)
-
-ggplot(unique(combined_data),
-       aes(x = TotalSteps, y = TotalMinutesAsleep)) +
-  geom_point()
+#Visualizations
+#avg_steps per hour
+ggplot(steps_per_hour_avg_total,
+       aes(x = active_hour, y = avg_steps)) +
+  geom_col() +
+  scale_x_continuous(expand = c(0,0), breaks = scales::pretty_breaks(n = 23)) +
+  labs(
+    title = "Average Steps Taken Per Hour",
+    x = "Active Hour",
+    y = "Average Steps Taken"
+  )
