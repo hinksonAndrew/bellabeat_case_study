@@ -68,8 +68,8 @@ ggplot(steps_per_hour_avg_total,
 
 #daily_sleep_avg - Average sleep per day per user
 ggplot(daily_sleep_avg,
-       aes(x = Id, y = avg_sleep)) +
-  geom_col() +
+       aes(x = as.character(Id), y = avg_sleep)) +
+  geom_bar(stat = "identity") +
   theme(axis.text.x = element_text(angle = 90))
-
                      
+  
